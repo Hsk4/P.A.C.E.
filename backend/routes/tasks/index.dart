@@ -69,7 +69,9 @@ Future<Response> _handleCreateTask(RequestContext context, admin.Firestore db) a
     final body = await context.request.body();
     final Map<String, dynamic> json = jsonDecode(body);
 
-    if (!json.containsKey('title') || (json['title'] as String?)?.trim().isEmpty ?? true) {
+    // Validate task title is present and non-empty
+    final title = _validateTitle(json);
+    if (title == null) {
       return Response.json(
         statusCode: HttpStatus.badRequest,
         body: {'error': 'Task title is required and must not be empty.'},
@@ -77,7 +79,6 @@ Future<Response> _handleCreateTask(RequestContext context, admin.Firestore db) a
     }
 
     final userId = json['userId'] as String? ?? 'demo_user_123';
-    final title = json['title'] as String;
     final isCompleted = json['isCompleted'] as bool? ?? false;
     final scheduledTime = json['scheduledTime'] != null
         ? DateTime.parse(json['scheduledTime'] as String)
@@ -112,4 +113,15 @@ Future<Response> _handleCreateTask(RequestContext context, admin.Firestore db) a
       body: {'error': 'Failed to create task', 'details': e.toString()},
     );
   }
+}
+
+/// Validates and extracts task title from request JSON
+/// Returns title if valid, null if invalid
+String? _validateTitle(Map<String, dynamic> json) {
+  final titleValue = json['title'];
+  if (titleValue == null) {
+    return null;
+  }
+  final title = titleValue.toString().trim();
+  return title.isEmpty ? null : title;
 }

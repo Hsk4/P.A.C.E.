@@ -4,6 +4,8 @@ import '../core/services/firebase_service.dart';
 
 class TaskScreen extends StatefulWidget {
   final List<TaskModel> tasks;
+  // Note: onStateChanged is maintained for backwards compatibility but task updates
+  // are now handled directly via FirebaseService in task_screen.dart
   final VoidCallback onStateChanged;
   final ValueChanged<TaskModel> onAddTask;
 
