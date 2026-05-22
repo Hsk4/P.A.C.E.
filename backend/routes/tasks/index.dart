@@ -2,72 +2,126 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
-import 'package:postgres/postgres.dart';
+import 'package:firebase_admin/firebase_admin.dart' as admin;
+import '../../lib/database.dart';
 
 Future<Response> onRequest(RequestContext context) async {
-  // Extract our pre-injected PostgreSQL connection
-  final dbConnection = context.read<Connection>();
+  // Get Firestore instance from the service
+  final db = await FirebaseDatabase.firestore;
 
   switch (context.request.method) {
     case HttpMethod.get:
-      return _handleGetTasks(dbConnection);
+      return _handleGetTasks(db, context);
     case HttpMethod.post:
-      return _handleCreateTask(context, dbConnection);
+      return _handleCreateTask(context, db);
     default:
       return Response(statusCode: HttpStatus.methodNotAllowed);
   }
 }
 
-Future<Response> _handleGetTasks(Connection db) async {
-  final Result result = await db.execute('SELECT id, title, is_completed, scheduled_time FROM tasks ORDER BY id DESC');
+Future<Response> _handleGetTasks(admin.Firestore db, RequestContext context) async {
+  try {
+    // Extract userId from query parameter or header
+    final userId = context.request.uri.queryParameters['userId'] ?? 'demo_user_123';
 
-  final List<Map<String, dynamic>> tasksList = result.map((row) {
-    return {
-      'id': row[0],
-      'title': row[1],
-      'isCompleted': row[2],
-      'scheduledTime': (row[3] as DateTime).toIso8601String(),
-    };
-  }).toList();
+    final snapshot = await db
+        .collection('users')
+        .doc(userId)
+        .collection('tasks')
+        .orderBy('scheduledTime', descending: true)
+        .get();
 
-  return Response.json(body: tasksList);
-}
+    final List<Map<String, dynamic>> tasksList = [];
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final scheduledTime = data['scheduledTime'];
+      
+      // Handle Firestore Timestamp correctly
+      String scheduledTimeStr;
+      if (scheduledTime is admin.Timestamp) {
+        scheduledTimeStr = scheduledTime.toDate().toIso8601String();
+      } else if (scheduledTime is String) {
+        scheduledTimeStr = scheduledTime;
+      } else {
+        scheduledTimeStr = DateTime.now().toIso8601String();
+      }
 
-Future<Response> _handleCreateTask(RequestContext context, Connection db) async {
-  final body = await context.request.body();
-  final Map<String, dynamic> json = jsonDecode(body);
+      tasksList.add({
+        'id': doc.id,
+        'userId': data['userId'] ?? userId,
+        'title': data['title'] ?? '',
+        'isCompleted': data['isCompleted'] ?? false,
+        'scheduledTime': scheduledTimeStr,
+      });
+    }
 
-  if (!json.containsKey('title') || json['title'].toString().trim().isEmpty) {
+    return Response.json(body: tasksList);
+  } catch (e) {
     return Response.json(
-      statusCode: HttpStatus.badRequest,
-      body: {'error': 'Task title context missing or structured incorrectly.'},
+      statusCode: HttpStatus.internalServerError,
+      body: {'error': 'Failed to fetch tasks', 'details': e.toString()},
     );
   }
+}
 
-  final title = json['title'] as String;
-  final isCompleted = json['isCompleted'] as bool? ?? false;
-  final scheduledTime = json['scheduledTime'] != null
-      ? DateTime.parse(json['scheduledTime'] as String)
-      : DateTime.now();
+Future<Response> _handleCreateTask(RequestContext context, admin.Firestore db) async {
+  try {
+    final body = await context.request.body();
+    final Map<String, dynamic> json = jsonDecode(body);
 
-  final Result result = await db.execute(
-    Sql.named('INSERT INTO tasks (title, is_completed, scheduled_time) VALUES (@title, @isCompleted, @scheduledTime) RETURNING id'),
-    parameters: {
-      'title': title,
-      'isCompleted': isCompleted,
-      'scheduledTime': scheduledTime,
-    },
-  );
+    // Validate task title is present and non-empty
+    final title = _validateTitle(json);
+    if (title == null) {
+      return Response.json(
+        statusCode: HttpStatus.badRequest,
+        body: {'error': 'Task title is required and must not be empty.'},
+      );
+    }
 
-  final generatedId = result.first[0];
+    final userId = json['userId'] as String? ?? 'demo_user_123';
+    final isCompleted = json['isCompleted'] as bool? ?? false;
+    final scheduledTime = json['scheduledTime'] != null
+        ? DateTime.parse(json['scheduledTime'] as String)
+        : DateTime.now();
 
-  return Response.json(
-    statusCode: HttpStatus.created,
-    body: {
-      'id': generatedId,
-      'title': title,
-      'isCompleted': isCompleted,
-      'scheduledTime': scheduledTime.toIso8601String(),
-    },
-  );
+    // Create task document in Firestore
+    final docRef = await db
+        .collection('users')
+        .doc(userId)
+        .collection('tasks')
+        .add({
+          'userId': userId,
+          'title': title,
+          'isCompleted': isCompleted,
+          'scheduledTime': admin.Timestamp.fromDateTime(scheduledTime),
+          'createdAt': admin.FieldValue.serverTimestamp(),
+        });
+
+    return Response.json(
+      statusCode: HttpStatus.created,
+      body: {
+        'id': docRef.id,
+        'userId': userId,
+        'title': title,
+        'isCompleted': isCompleted,
+        'scheduledTime': scheduledTime.toIso8601String(),
+      },
+    );
+  } catch (e) {
+    return Response.json(
+      statusCode: HttpStatus.internalServerError,
+      body: {'error': 'Failed to create task', 'details': e.toString()},
+    );
+  }
+}
+
+/// Validates and extracts task title from request JSON
+/// Returns title if valid, null if invalid
+String? _validateTitle(Map<String, dynamic> json) {
+  final titleValue = json['title'];
+  if (titleValue == null) {
+    return null;
+  }
+  final title = titleValue.toString().trim();
+  return title.isEmpty ? null : title;
 }

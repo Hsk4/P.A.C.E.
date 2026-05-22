@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/task_model.dart';
+import '../core/services/firebase_service.dart';
 
 class TaskScreen extends StatefulWidget {
   final List<TaskModel> tasks;
+  // Note: onStateChanged is maintained for backwards compatibility but task updates
+  // are now handled directly via FirebaseService in task_screen.dart
   final VoidCallback onStateChanged;
   final ValueChanged<TaskModel> onAddTask;
 
@@ -32,9 +35,11 @@ class _TaskScreenState extends State<TaskScreen> {
 		value: task.isCompleted,
 		title: Text(task.title),
 		subtitle: Text('${task.scheduledTime.toLocal()}'),
-		onChanged: (v) {
-		  setState(() => task.isCompleted = v ?? false);
-		  widget.onStateChanged();
+		onChanged: (v) async {
+		  task.isCompleted = v ?? false;
+		  // Update the task in Firebase
+		  await FirebaseService.updateTask(task);
+		  setState(() {});
 		},
 		);
 	  },
@@ -105,6 +110,7 @@ class _TaskScreenState extends State<TaskScreen> {
 					  }
 					  final task = TaskModel(
 						id: DateTime.now().microsecondsSinceEpoch.toString(),
+						userId: FirebaseService.getCurrentUserId() ?? '',
 						title: title.trim(),
 						scheduledTime: scheduled ?? DateTime.now(),
 					  );

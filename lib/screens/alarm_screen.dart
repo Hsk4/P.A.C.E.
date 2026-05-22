@@ -1,6 +1,7 @@
 // lib/screens/alarm_screen.dart
 import 'package:flutter/material.dart';
 import '../models/alarm_model.dart';
+import '../core/services/firebase_service.dart';
 
 class AlarmScreen extends StatefulWidget {
   final List<AlarmModel> alarms;
@@ -57,9 +58,11 @@ class _AlarmScreenState extends State<AlarmScreen> {
                   subtitle: Text('${_formatTime(alarm.time)} • ${_repeatSummary(alarm)}'),
                   trailing: Switch(
                     value: alarm.isActive,
-                    onChanged: (v) {
-                      setState(() => alarm.isActive = v);
-                      widget.onToggleAlarm(alarm);
+                    onChanged: (v) async {
+                      alarm.isActive = v;
+                      // Update alarm in Firebase
+                      await FirebaseService.updateAlarm(alarm);
+                      setState(() {});
                     },
                   ),
                 );
@@ -208,6 +211,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
                       final alarmDateTime = DateTime(now.year, now.month, now.day, pickedTime!.hour, pickedTime!.minute);
                       final alarm = AlarmModel(
                         id: DateTime.now().microsecondsSinceEpoch.toString(),
+                        userId: FirebaseService.getCurrentUserId() ?? '',
                         time: alarmDateTime,
                         label: label.trim().isEmpty ? 'Alarm' : label.trim(),
                         repeat: repeat,
