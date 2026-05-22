@@ -34,6 +34,10 @@ jobs:
       - name: Safe Install Isolated Dependencies
         run: flutter pub get
 
+      - name: Install Backend Service Dependencies
+        working-directory: backend
+        run: dart pub get
+
       - name: Structural Lint Analysis Checking
         run: flutter analyze
 
