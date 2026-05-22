@@ -57,30 +57,103 @@ class ShellNavigationLayout extends StatefulWidget {
 
 class _ShellNavigationLayoutState extends State<ShellNavigationLayout> {
   int _currentIndex = 0;
-
-  // Shared application state pipelines
-  final List<TaskModel> _globalTasks = [];
-  final List<AlarmModel> _globalAlarms = [];
   int _completedPomodoros = 0;
 
   @override
   Widget build(BuildContext context) {
+    // Build screens with Firebase streams for real-time updates
     final List<Widget> screens = [
-      DashboardScreen(tasks: _globalTasks, completedPomodoros: _completedPomodoros),
-      PomodoroScreen(onTimerComplete: () {
-        setState(() {
-          _completedPomodoros++;
-        });
-      }),
-      AlarmScreen(
-        alarms: _globalAlarms,
-        onAddAlarm: (alarm) => setState(() => _globalAlarms.add(alarm)),
-        onToggleAlarm: (alarm) => setState(() {}),
+      // Dashboard with task stream
+      StreamBuilder<List<TaskModel>>(
+        stream: FirebaseService.tasksStream(),
+        builder: (context, snapshot) {
+          final tasks = snapshot.data ?? [];
+          return DashboardScreen(
+            tasks: tasks,
+            completedPomodoros: _completedPomodoros,
+          );
+        },
       ),
-      TaskScreen(
-        tasks: _globalTasks,
-        onStateChanged: () => setState(() {}),
-        onAddTask: (task) => setState(() => _globalTasks.add(task)),
+      // Pomodoro screen
+      PomodoroScreen(
+        onTimerComplete: () {
+          setState(() {
+            _completedPomodoros++;
+          });
+          // Optional: Save pomodoro stats to Firebase
+          // await FirebaseService.savePomodoroStat(_completedPomodoros);
+        },
+      ),
+      // Alarms with stream
+      StreamBuilder<List<AlarmModel>>(
+        stream: FirebaseService.alarmsStream(),
+        builder: (context, snapshot) {
+          final alarms = snapshot.data ?? [];
+          return AlarmScreen(
+            alarms: alarms,
+            onAddAlarm: (alarm) async {
+              // Add userId to alarm before saving
+              final alarmWithUser = AlarmModel(
+                id: alarm.id,
+                userId: FirebaseService.getCurrentUserId() ?? '',
+                time: alarm.time,
+                label: alarm.label,
+                customAudioPath: alarm.customAudioPath,
+                isActive: alarm.isActive,
+                repeat: alarm.repeat,
+                repeatDays: alarm.repeatDays,
+                snoozeMinutes: alarm.snoozeMinutes,
+                vibrate: alarm.vibrate,
+              );
+              final saved = await FirebaseService.saveAlarm(alarmWithUser);
+              if (saved == null) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Failed to save alarm')),
+                  );
+                }
+              }
+            },
+            onToggleAlarm: (alarm) async {
+              // Update alarm toggle state in Firebase
+              await FirebaseService.updateAlarm(alarm);
+            },
+          );
+        },
+      ),
+      // Tasks with stream
+      StreamBuilder<List<TaskModel>>(
+        stream: FirebaseService.tasksStream(),
+        builder: (context, snapshot) {
+          final tasks = snapshot.data ?? [];
+          return TaskScreen(
+            tasks: tasks,
+            onStateChanged: () async {
+              // Find and update the changed task
+              for (final task in tasks) {
+                await FirebaseService.updateTask(task);
+              }
+            },
+            onAddTask: (task) async {
+              // Add userId to task before saving
+              final taskWithUser = TaskModel(
+                id: task.id,
+                userId: FirebaseService.getCurrentUserId() ?? '',
+                title: task.title,
+                isCompleted: task.isCompleted,
+                scheduledTime: task.scheduledTime,
+              );
+              final saved = await FirebaseService.saveTask(taskWithUser);
+              if (saved == null) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Failed to save task')),
+                  );
+                }
+              }
+            },
+          );
+        },
       ),
     ];
 
