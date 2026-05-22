@@ -1,0 +1,50 @@
+name: Production App Compilation Engine
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  compile-android:
+    name: Native Compilation and Verification Pipeline
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Codebase Checkout Execution
+        uses: actions/checkout@v4
+
+      - name: Java Environment Bootstrap Setup
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Flutter Framework Engine Initialization
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Environment Matrix Tooling
+        run: flutter doctor -v
+
+      - name: Safe Install Isolated Dependencies
+        run: flutter pub get
+
+      - name: Structural Lint Analysis Checking
+        run: flutter analyze
+
+      - name: Execute System Test Suite
+        run: flutter test
+
+      - name: Compile High-Fidelity Android Release Binary
+        run: flutter build apk --release
+
+      - name: Persist Generated Release Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

@@ -1,0 +1,1 @@
+// Central color scheme configurations

@@ -1,0 +1,1 @@
+web: dart_frog build && dart build build/bin/server.dart -o server && ./server
