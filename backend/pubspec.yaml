@@ -1,5 +1,5 @@
 name: scheduler_backend
-description: A simple Dart Frog API backend for the personal scheduler app
+description: A simple Dart Frog API backend for the personal scheduler app with Firebase
 version: 1.0.0
 repository: https://github.com/yourusername/scheduler_backend
 
@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   dart_frog: ^1.1.0
-  postgres: ^3.2.1
+  firebase_admin: ^2.3.0
 
 dev_dependencies:
   mocktail: ^1.0.4

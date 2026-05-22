@@ -1,6 +1,9 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'core/services/notify_service.dart';
+import 'core/services/firebase_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/pomodoro_screen.dart';
 import 'screens/alarm_screen.dart';
@@ -10,7 +13,18 @@ import 'models/alarm_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Initialize notification service
   await NotifyService.init();
+  
+  // Set a demo user ID for Firebase (in production, use actual authentication)
+  FirebaseService.setCurrentUserId('demo_user_123');
+  
   runApp(const PersonalSchedulerApp());
 }
 
