@@ -60,24 +60,23 @@ class DashboardScreen extends StatelessWidget {
 class _MetricCard extends StatelessWidget {
   final String title;
   final String value;
-  final IconData icon ;
-  final Color color;
 
-  const _MetricCard({super.key, required this.title, required this.value, this.icon = Icons.check_circle_outline, this.color = Colors.green});
+  // ignore: unused_element_parameter
+  const _MetricCard({super.key, required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 40, color: color),
+              const Icon(Icons.check_circle_outline, size: 40, color: Colors.green),
               const SizedBox(height: 10),
-              Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 5),
-              Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             ],
           )
 
