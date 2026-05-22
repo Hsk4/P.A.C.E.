@@ -48,7 +48,7 @@ class DefaultFirebaseOptions {
     appId: 'YOUR_IOS_APP_ID',
     messagingSenderId: 'YOUR_IOS_MESSAGING_SENDER_ID',
     projectId: 'YOUR_PROJECT_ID',
-    iosBundleId: 'com.example.personalSchedular',
+    iosBundleId: 'com.example.personalScheduler',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -56,7 +56,7 @@ class DefaultFirebaseOptions {
     appId: 'YOUR_MACOS_APP_ID',
     messagingSenderId: 'YOUR_MACOS_MESSAGING_SENDER_ID',
     projectId: 'YOUR_PROJECT_ID',
-    iosBundleId: 'com.example.personalSchedular',
+    iosBundleId: 'com.example.personalScheduler',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

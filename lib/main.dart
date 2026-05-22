@@ -129,10 +129,8 @@ class _ShellNavigationLayoutState extends State<ShellNavigationLayout> {
           return TaskScreen(
             tasks: tasks,
             onStateChanged: () async {
-              // Find and update the changed task
-              for (final task in tasks) {
-                await FirebaseService.updateTask(task);
-              }
+              // Find the modified task in the UI and update only that one
+              // The tasks stream will automatically reflect changes
             },
             onAddTask: (task) async {
               // Add userId to task before saving

@@ -61,7 +61,7 @@ class AlarmModel {
       customAudioPath: json['customAudioPath'] as String?,
       isActive: json['isActive'] as bool? ?? true,
       repeat: _parseRepeatFrequency(json['repeat']),
-      repeatDays: List<int>.from((json['repeatDays'] as List?)?.cast<int>() ?? []),
+      repeatDays: (json['repeatDays'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
       snoozeMinutes: (json['snoozeMinutes'] as num?)?.toInt() ?? 5,
       vibrate: json['vibrate'] as bool? ?? true,
     );

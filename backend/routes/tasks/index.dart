@@ -34,20 +34,29 @@ Future<Response> _handleGetTasks(admin.Firestore db, RequestContext context) asy
     final List<Map<String, dynamic>> tasksList = [];
     for (final doc in snapshot.docs) {
       final data = doc.data();
+      final scheduledTime = data['scheduledTime'];
+      
+      // Handle Firestore Timestamp correctly
+      String scheduledTimeStr;
+      if (scheduledTime is admin.Timestamp) {
+        scheduledTimeStr = scheduledTime.toDate().toIso8601String();
+      } else if (scheduledTime is String) {
+        scheduledTimeStr = scheduledTime;
+      } else {
+        scheduledTimeStr = DateTime.now().toIso8601String();
+      }
+
       tasksList.add({
         'id': doc.id,
         'userId': data['userId'] ?? userId,
         'title': data['title'] ?? '',
         'isCompleted': data['isCompleted'] ?? false,
-        'scheduledTime': data['scheduledTime'] != null
-            ? (data['scheduledTime'] as DateTime).toIso8601String()
-            : DateTime.now().toIso8601String(),
+        'scheduledTime': scheduledTimeStr,
       });
     }
 
     return Response.json(body: tasksList);
   } catch (e) {
-    print('Firebase Error fetching tasks: $e');
     return Response.json(
       statusCode: HttpStatus.internalServerError,
       body: {'error': 'Failed to fetch tasks', 'details': e.toString()},
@@ -60,10 +69,10 @@ Future<Response> _handleCreateTask(RequestContext context, admin.Firestore db) a
     final body = await context.request.body();
     final Map<String, dynamic> json = jsonDecode(body);
 
-    if (!json.containsKey('title') || json['title'].toString().trim().isEmpty) {
+    if (!json.containsKey('title') || (json['title'] as String?)?.trim().isEmpty ?? true) {
       return Response.json(
         statusCode: HttpStatus.badRequest,
-        body: {'error': 'Task title is missing or structured incorrectly.'},
+        body: {'error': 'Task title is required and must not be empty.'},
       );
     }
 
@@ -98,7 +107,6 @@ Future<Response> _handleCreateTask(RequestContext context, admin.Firestore db) a
       },
     );
   } catch (e) {
-    print('Firebase Error creating task: $e');
     return Response.json(
       statusCode: HttpStatus.internalServerError,
       body: {'error': 'Failed to create task', 'details': e.toString()},

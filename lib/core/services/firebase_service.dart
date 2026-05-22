@@ -1,5 +1,6 @@
 // lib/core/services/firebase_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/task_model.dart';
 import '../../models/alarm_model.dart';
 
@@ -17,13 +18,21 @@ class FirebaseService {
     return _currentUserId;
   }
 
+  static void _logError(String message, Object? error) {
+    if (kDebugMode) {
+      debugPrint('$message: $error');
+    }
+    // In production, errors should be logged to Firebase Crashlytics
+    // FirebaseCrashlytics.instance.recordError(error, StackTrace.current);
+  }
+
   // ========== TASK OPERATIONS ==========
 
   /// Fetch all tasks for the current user
   static Future<List<TaskModel>> getAllTasks() async {
     try {
       if (_currentUserId == null) {
-        print('Error: User not authenticated');
+        _logError('Error', 'User not authenticated');
         return [];
       }
 
@@ -38,7 +47,7 @@ class FirebaseService {
           .map((doc) => TaskModel.fromJson({...doc.data(), 'id': doc.id}))
           .toList();
     } catch (e) {
-      print('Firebase Error fetching tasks: $e');
+      _logError('Firebase Error fetching tasks', e);
       return [];
     }
   }
@@ -47,7 +56,7 @@ class FirebaseService {
   static Future<TaskModel?> saveTask(TaskModel task) async {
     try {
       if (_currentUserId == null) {
-        print('Error: User not authenticated');
+        _logError('Error', 'User not authenticated');
         return null;
       }
 
@@ -62,7 +71,7 @@ class FirebaseService {
 
       return TaskModel.fromJson({...taskData, 'id': docRef.id});
     } catch (e) {
-      print('Firebase Error creating task: $e');
+      _logError('Firebase Error creating task', e);
       return null;
     }
   }
@@ -71,7 +80,7 @@ class FirebaseService {
   static Future<bool> updateTask(TaskModel task) async {
     try {
       if (_currentUserId == null) {
-        print('Error: User not authenticated');
+        _logError('Error', 'User not authenticated');
         return false;
       }
 
@@ -84,7 +93,7 @@ class FirebaseService {
 
       return true;
     } catch (e) {
-      print('Firebase Error updating task: $e');
+      _logError('Firebase Error updating task', e);
       return false;
     }
   }
@@ -93,7 +102,7 @@ class FirebaseService {
   static Future<bool> deleteTask(String taskId) async {
     try {
       if (_currentUserId == null) {
-        print('Error: User not authenticated');
+        _logError('Error', 'User not authenticated');
         return false;
       }
 
@@ -106,7 +115,7 @@ class FirebaseService {
 
       return true;
     } catch (e) {
-      print('Firebase Error deleting task: $e');
+      _logError('Firebase Error deleting task', e);
       return false;
     }
   }
@@ -114,7 +123,7 @@ class FirebaseService {
   /// Stream of tasks for real-time updates
   static Stream<List<TaskModel>> tasksStream() {
     if (_currentUserId == null) {
-      print('Error: User not authenticated');
+      _logError('Error', 'User not authenticated');
       return Stream.value([]);
     }
 
@@ -135,7 +144,7 @@ class FirebaseService {
   static Future<List<AlarmModel>> getAllAlarms() async {
     try {
       if (_currentUserId == null) {
-        print('Error: User not authenticated');
+        _logError('Error', 'User not authenticated');
         return [];
       }
 
@@ -150,7 +159,7 @@ class FirebaseService {
           .map((doc) => AlarmModel.fromJson({...doc.data(), 'id': doc.id}))
           .toList();
     } catch (e) {
-      print('Firebase Error fetching alarms: $e');
+      _logError('Firebase Error fetching alarms', e);
       return [];
     }
   }
@@ -159,7 +168,7 @@ class FirebaseService {
   static Future<AlarmModel?> saveAlarm(AlarmModel alarm) async {
     try {
       if (_currentUserId == null) {
-        print('Error: User not authenticated');
+        _logError('Error', 'User not authenticated');
         return null;
       }
 
@@ -174,7 +183,7 @@ class FirebaseService {
 
       return AlarmModel.fromJson({...alarmData, 'id': docRef.id});
     } catch (e) {
-      print('Firebase Error creating alarm: $e');
+      _logError('Firebase Error creating alarm', e);
       return null;
     }
   }
@@ -183,7 +192,7 @@ class FirebaseService {
   static Future<bool> updateAlarm(AlarmModel alarm) async {
     try {
       if (_currentUserId == null) {
-        print('Error: User not authenticated');
+        _logError('Error', 'User not authenticated');
         return false;
       }
 
@@ -196,7 +205,7 @@ class FirebaseService {
 
       return true;
     } catch (e) {
-      print('Firebase Error updating alarm: $e');
+      _logError('Firebase Error updating alarm', e);
       return false;
     }
   }
@@ -205,7 +214,7 @@ class FirebaseService {
   static Future<bool> deleteAlarm(String alarmId) async {
     try {
       if (_currentUserId == null) {
-        print('Error: User not authenticated');
+        _logError('Error', 'User not authenticated');
         return false;
       }
 
@@ -218,7 +227,7 @@ class FirebaseService {
 
       return true;
     } catch (e) {
-      print('Firebase Error deleting alarm: $e');
+      _logError('Firebase Error deleting alarm', e);
       return false;
     }
   }
@@ -226,7 +235,7 @@ class FirebaseService {
   /// Stream of alarms for real-time updates
   static Stream<List<AlarmModel>> alarmsStream() {
     if (_currentUserId == null) {
-      print('Error: User not authenticated');
+      _logError('Error', 'User not authenticated');
       return Stream.value([]);
     }
 
